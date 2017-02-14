@@ -11,9 +11,9 @@ import com.qualcomm.robotcore.hardware.I2cDeviceSynch;
 import com.qualcomm.robotcore.hardware.I2cDeviceSynchImpl;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
-import com.qualcomm.robotcore.hardware.GyroSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 
 public class EeyoreHardware
 {
@@ -25,8 +25,8 @@ public class EeyoreHardware
     byte[] range1Cache; //The read will return an array of bytes. They are stored in this variable
     byte[] range2Cache;
 
-    I2cAddr RANGE1ADDRESS = new I2cAddr(0x14); //Default I2C address for MR Range (7-bit)
-    I2cAddr RANGE2ADDRESS = new I2cAddr(0x14); //Default I2C address for MR Range (7-bit)
+    I2cAddr RANGE1ADDRESS = new I2cAddr(0x28); //Default I2C address for MR Range (7-bit)
+    I2cAddr RANGE2ADDRESS = new I2cAddr(0x28); //Default I2C address for MR Range (7-bit)
     public static final int RANGE1_REG_START = 0x04; //Register to start reading
     public static final int RANGE2_REG_START = 0x04; //Register to start reading
     public static final int RANGE1_READ_LENGTH = 2; //Number of byte to read
@@ -38,6 +38,18 @@ public class EeyoreHardware
     public I2cDeviceSynch RANGE1Reader;
     public I2cDeviceSynch RANGE2Reader;
 
+
+    //Initialize Gyro
+    ModernRoboticsI2cGyro gyro;   // Hardware Device Object
+    int xVal, yVal, zVal = 0;     // Gyro rate Values
+    int heading = 0;              // Gyro integrated heading
+    int angleZ = 0;
+    boolean lastResetState = false;
+    boolean curResetState  = false;
+
+
+
+
     /* Public OpMode members. */
     public DcMotor l1 = null;
     public DcMotor l2 = null;
@@ -48,9 +60,7 @@ public class EeyoreHardware
     public DcMotor collection = null;
     public Servo leftPresser = null;
     public Servo rightPresser = null;
-    public GyroSensor gyro = null;
     public ColorSensor color = null;
-    public
 
     /* local OpMode members. */
     HardwareMap hwMap = null;
@@ -78,8 +88,8 @@ public class EeyoreHardware
         rightPresser = hwMap.servo.get("button_right");
 
         color = hwMap.colorSensor.get("color");
-        gyro = hwMap.gyroSensor.get("gyro");
 
+        gyro = (ModernRoboticsI2cGyro)hwMap.gyroSensor.get("gyro");
         // Set motor direction
         l1.setDirection(DcMotor.Direction.REVERSE);
         l2.setDirection(DcMotor.Direction.REVERSE);
@@ -121,7 +131,7 @@ public class EeyoreHardware
         RANGE1Reader = new I2cDeviceSynchImpl(RANGE1, RANGE1ADDRESS, false);
         RANGE1Reader.engage();
 
-        RANGE2 = hwMap.i2cDevice.get("range1");
+        RANGE2 = hwMap.i2cDevice.get("range2");
         RANGE2Reader = new I2cDeviceSynchImpl(RANGE2, RANGE2ADDRESS, false);
         RANGE2Reader.engage();
     }
@@ -163,7 +173,7 @@ public class EeyoreHardware
 
         while(Math.abs(targetDirection - currentDirection) > 3) //If we are more than 5 degrees off target, make corrections before moving
         {
-            currentDirection = gyro.getHeading();
+            currentDirection = gyro.getIntegratedZValue();
 
             int error = targetDirection - currentDirection;
             double speedAdjustment = turnMultiplier * error;

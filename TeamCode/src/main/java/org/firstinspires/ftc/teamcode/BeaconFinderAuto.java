@@ -217,7 +217,7 @@ public class BeaconFinderAuto extends CameraProcessor {
         double error_prior = 0;
 
         while(Math.abs(heading - target) > buffer ) {
-            heading = robot.gyro.getHeading(); //Get the raw, signed z value
+            heading = robot.gyro.getIntegratedZValue(); //Get the raw, signed z value
             currentLoopTime = System.currentTimeMillis();
             double iterationTime = currentLoopTime - lastLoopTime;
             /*if(target > heading) {
