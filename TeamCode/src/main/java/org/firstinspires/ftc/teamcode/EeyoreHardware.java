@@ -25,8 +25,8 @@ public class EeyoreHardware
     byte[] range1Cache; //The read will return an array of bytes. They are stored in this variable
     byte[] range2Cache;
 
-    I2cAddr RANGE1ADDRESS = new I2cAddr(0x28); //Default I2C address for MR Range (7-bit)
-    I2cAddr RANGE2ADDRESS = new I2cAddr(0x28); //Default I2C address for MR Range (7-bit)
+    I2cAddr RANGE1ADDRESS = new I2cAddr(0x14); //Default I2C address for MR Range (7-bit)
+    I2cAddr RANGE2ADDRESS = new I2cAddr(0x14); //Default I2C address for MR Range (7-bit)
     public static final int RANGE1_REG_START = 0x04; //Register to start reading
     public static final int RANGE2_REG_START = 0x04; //Register to start reading
     public static final int RANGE1_READ_LENGTH = 2; //Number of byte to read
@@ -160,7 +160,7 @@ public class EeyoreHardware
         range1Cache = RANGE1Reader.read(RANGE1_REG_START, RANGE1_READ_LENGTH);
         range2Cache = RANGE2Reader.read(RANGE2_REG_START, RANGE2_READ_LENGTH);
 
-        double range[] = {range1Cache[0] & 0xFF, range2Cache[0]};
+        double range[] = {range1Cache[0] & 0xFF, range2Cache[0] & 0xFF};
 
         return range;
 

@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.firstinspires.ftc.teamcode.EeyoreHardware.COUNTS_PER_INCH;
+import static org.firstinspires.ftc.teamcode.EeyoreHardware.RANGE1_READ_LENGTH;
 
 @Autonomous(name="Beacon Finder", group="Iterative Opmode")  // @Autonomous(...) is the other common choice
 public class BeaconFinderAuto extends CameraProcessor {
@@ -146,6 +147,7 @@ public class BeaconFinderAuto extends CameraProcessor {
         while(opModeIsActive()) {
             telemetry.addData("Status:", "Idling...");
             telemetry.addData("Returned Side:", returnedSide);
+            telemetry.addData("Distance: ", robot.getWallDistance());
             telemetry.update();
             idle();
         }
@@ -189,8 +191,7 @@ public class BeaconFinderAuto extends CameraProcessor {
         robot.rightPresser.setPosition(0.8);
     }
 
-    public void turnTester() throws InterruptedException //Method to test the gyro code for pid calibration. Calls a bunch of Gyro Turns at varying degrees.
-    {
+    public void turnTester() throws InterruptedException {
         gyroTurn(90);
         Thread.sleep(3000);
         gyroTurn(-90);
@@ -199,19 +200,20 @@ public class BeaconFinderAuto extends CameraProcessor {
         Thread.sleep(3000);
         gyroTurn(180);
         Thread.sleep(3000);
+        gyroTurn(-180);
+        Thread.sleep(3000);
         gyroTurn(0);
     }
 
-    public void gyroTurn(int target) throws InterruptedException
-    {
+    public void gyroTurn(int target) throws InterruptedException {
         robot.l1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         robot.r1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         idle();
 
-        double Kp = 1.25; //2.5 was the ideal time with no I or D
-        double Kd = 1.25;
+        double Kp = 1; //2.5 was the ideal time with no I or D
+        double Kd = 2;
         double heading = robot.gyro.getHeading();
-        double buffer = 3;
+        double buffer = 1;
         double lastLoopTime = System.currentTimeMillis();
         double currentLoopTime = 0;
         double error_prior = 0;
@@ -220,22 +222,14 @@ public class BeaconFinderAuto extends CameraProcessor {
             heading = robot.gyro.getIntegratedZValue(); //Get the raw, signed z value
             currentLoopTime = System.currentTimeMillis();
             double iterationTime = currentLoopTime - lastLoopTime;
-            /*if(target > heading) {
-                power = Range.clip((1 - (Math.round((heading / target) * 100.0) / 100.0)) * 0.2, 0.25, 1);
-                driveLeft(power);
-            } else {
-                power = Range.clip((1 - (Math.round((heading / target) * 100.0) / 100.0)) * 0.2, -1, -0.25);
-                driveRight(power);
-            }*/
-
             double error = (target - heading) / 360;
-            double derivative = (error - error_prior) / (iterationTime + 0.0000000001);
-            double output = Range.clip((Kp * error + Kd * derivative), -0.7, 0.7);
+            double derivative = (error - error_prior) / (iterationTime);
+            double output = Range.clip((Kp * error + Kd * derivative), -0.5, 0.5);
 
-            robot.l1.setPower(output);
-            robot.l2.setPower(output);
-            robot.r1.setPower(-output);
-            robot.r2.setPower(-output);
+            robot.l1.setPower(-output);
+            robot.l2.setPower(-output);
+            robot.r1.setPower(output);
+            robot.r2.setPower(output);
 
             telemetry.addData("Power:", output);
             telemetry.addData("Error: ", error);
@@ -250,6 +244,55 @@ public class BeaconFinderAuto extends CameraProcessor {
             lastLoopTime = currentLoopTime;
             idle();
         }
+        setDrivePower(0);
+    }
+
+    public void gyroDrive(double inches, int target, double speed) throws InterruptedException {
+        robot.l1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.r1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        idle();
+
+        robot.l1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.r1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        idle();
+
+        int targetLeft = robot.l1.getCurrentPosition() + (int)(inches * COUNTS_PER_INCH);
+        int targetRight = robot.r1.getCurrentPosition() + (int)(inches * COUNTS_PER_INCH);
+
+        double Kp = 1; //2.5 was the ideal time with no I or D
+        double Kd = 0.1;
+        double heading = robot.gyro.getHeading();
+        double lastLoopTime = System.currentTimeMillis();
+        double currentLoopTime = 0;
+        double error_prior = 0;
+
+        while((robot.l1.getCurrentPosition() < targetLeft) && (robot.r1.getCurrentPosition() < targetRight)) {
+            heading = robot.gyro.getIntegratedZValue(); //Get the raw, signed z value
+            currentLoopTime = System.currentTimeMillis();
+            double iterationTime = currentLoopTime - lastLoopTime;
+            double error = (target - heading) / 360;
+            double derivative = (error - error_prior) / (iterationTime);
+            double output = Range.clip((Kp * error + Kd * derivative), -0.5, 0.5);
+
+            robot.l1.setPower(Range.clip((speed - output), -0.9, 0.9));
+            robot.l2.setPower(Range.clip((speed - output), -0.9, 0.9));
+            robot.r1.setPower(Range.clip((speed + output), -0.9, 0.9));
+            robot.r2.setPower(Range.clip((speed + output), -0.9, 0.9));
+
+            telemetry.addData("Power:", output);
+            telemetry.addData("Error: ", error);
+            telemetry.addData("Derivative: ", derivative);
+            telemetry.addData("Heading / Target:", heading + " / " + target);
+            telemetry.update();
+
+            if(!opModeIsActive()) {
+                break;
+            }
+
+            lastLoopTime = currentLoopTime;
+            idle();
+        }
+
         setDrivePower(0);
     }
 
