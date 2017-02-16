@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.firstinspires.ftc.teamcode.EeyoreHardware.COUNTS_PER_INCH;
-import static org.firstinspires.ftc.teamcode.EeyoreHardware.RANGE1_READ_LENGTH;
 
 @Autonomous(name="Beacon Finder", group="Iterative Opmode")  // @Autonomous(...) is the other common choice
 public class BeaconFinderAuto extends CameraProcessor {
