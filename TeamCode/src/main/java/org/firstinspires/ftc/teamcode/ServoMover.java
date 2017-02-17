@@ -31,13 +31,13 @@ public class ServoMover extends LinearOpMode {
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
-        // run until the end of the match (driver presses STOP)
-        while (opModeIsActive()) {
-            float position = 0;
+        // Run until the end of the match (driver presses STOP)
+        while(opModeIsActive()) {
+            double position = 0;
 
-            if (gamepad1.a) {
+            if(gamepad1.a) {
                 position = 1;
-            } else if (gamepad1.y) {
+            } else if(gamepad1.y) {
                 position = 0;
             }
 
@@ -47,7 +47,7 @@ public class ServoMover extends LinearOpMode {
             telemetry.addData("Servo", "%.2f", servo.getPosition());
             telemetry.update();
 
-            idle(); // Always call idle() at the bottom of your while(opModeIsActive()) loop
+            idle();
         }
     }
 }

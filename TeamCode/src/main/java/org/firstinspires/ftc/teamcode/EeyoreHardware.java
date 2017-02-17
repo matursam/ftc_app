@@ -25,21 +25,6 @@ public class EeyoreHardware
     static final double WHEEL_DIAMETER_INCHES = 4.0;
     static final double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * Math.PI);
 
-
-
-    //Initialize Gyro
-    ModernRoboticsI2cGyro gyro;   // Hardware Device Object
-    int xVal, yVal, zVal = 0;     // Gyro rate Values
-    int heading = 0;              // Gyro integrated heading
-    int angleZ = 0;
-    boolean lastResetState = false;
-    boolean curResetState  = false;
-
-
-    ModernRoboticsI2cRangeSensor range1;
-    ModernRoboticsI2cRangeSensor range2;
-
-
     /* Public OpMode members. */
     public DcMotor l1 = null;
     public DcMotor l2 = null;
@@ -50,10 +35,12 @@ public class EeyoreHardware
     public DcMotor collection = null;
     public Servo leftPresser = null;
     public Servo rightPresser = null;
-
     public ColorSensor color = null;
+    public ModernRoboticsI2cGyro gyro = null;
+    public ModernRoboticsI2cRangeSensor range1 = null;
+    public ModernRoboticsI2cRangeSensor range2 = null;
 
-    /* local OpMode members. */
+    /* Local OpMode members. */
     HardwareMap hwMap = null;
     private ElapsedTime period = new ElapsedTime();
 
@@ -77,10 +64,11 @@ public class EeyoreHardware
         collection = hwMap.dcMotor.get("collection");
         leftPresser = hwMap.servo.get("button_left");
         rightPresser = hwMap.servo.get("button_right");
-
         color = hwMap.colorSensor.get("color");
-
         gyro = (ModernRoboticsI2cGyro)hwMap.gyroSensor.get("gyro");
+        range1 = hwMap.get(ModernRoboticsI2cRangeSensor.class, "range1");
+        range2 = hwMap.get(ModernRoboticsI2cRangeSensor.class, "range2");
+
         // Set motor direction
         l1.setDirection(DcMotor.Direction.REVERSE);
         l2.setDirection(DcMotor.Direction.REVERSE);
@@ -116,10 +104,6 @@ public class EeyoreHardware
         // Initialize servos
         leftPresser.setPosition(0.8);
         rightPresser.setPosition(0.8);
-
-        //Initialize range sensor
-        range1 = hwMap.get(ModernRoboticsI2cRangeSensor.class, "range1");
-        range2 = hwMap.get(ModernRoboticsI2cRangeSensor.class, "range2");
     }
 
     /***
@@ -141,39 +125,4 @@ public class EeyoreHardware
         // Reset the cycle clock for the next pass.
         period.reset();
     }
-    public double getWallDistance()
-    {
-        return (range1.getDistance(DistanceUnit.CM) + range2.getDistance(DistanceUnit.CM)) / 2;
-    }
-    public void moveRobotGyro(int targetDirection) //Speed is from -1 to 1 and direction is 0 to 360 degrees
-    {
-        int currentDirection = gyro.getHeading();
-        double turnMultiplier = 0.06; //P value in PID-speak
-        double integral;
-
-        while(Math.abs(targetDirection - currentDirection) > 3) //If we are more than 5 degrees off target, make corrections before moving
-        {
-            currentDirection = gyro.getIntegratedZValue();
-
-            int error = targetDirection - currentDirection;
-            double speedAdjustment = turnMultiplier * error;
-
-            double leftPower = 0.5 * Range.clip(speedAdjustment, -1, 1);
-            double rightPower = 0.5 * Range.clip(-speedAdjustment, -1, 1);
-
-            //Finally, assign these values to the motors
-
-            r1.setPower(rightPower);
-            r2.setPower(rightPower);
-            l1.setPower(leftPower);
-            l2.setPower(leftPower);
-        }
-
-        r1.setPower(0);
-        r2.setPower(0);
-        l1.setPower(0);
-        l2.setPower(0);
-    }
-
 }
-

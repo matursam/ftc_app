@@ -69,11 +69,10 @@ public class BasicBotHardware
      */
 
     public void waitForTick(long periodMs) throws InterruptedException {
+        long remaining = periodMs - (long)period.milliseconds();
 
-        long  remaining = periodMs - (long)period.milliseconds();
-
-        // sleep for the remaining portion of the regular cycle period.
-        if (remaining > 0)
+        // Sleep for the remaining portion of the regular cycle period.
+        if(remaining > 0)
             Thread.sleep(remaining);
 
         // Reset the cycle clock for the next pass.

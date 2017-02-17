@@ -108,8 +108,7 @@ public class SimpleShooterAuto extends CameraProcessor {
         robot.r2.setPower(0);
     }
 
-    public void gyroTurn(int degree) throws InterruptedException
-    {
+    public void gyroTurn(int degree) throws InterruptedException {
         int currentDirection = robot.gyro.getHeading();
         double turnMultiplier = 0.05;
 
@@ -118,8 +117,7 @@ public class SimpleShooterAuto extends CameraProcessor {
         idle();
 
         // First, check to see if we are pointing in the correct direction
-        while(Math.abs(degree - currentDirection) > 5) //If we are more than 5 degrees off target, make corrections before moving
-        {
+        while(Math.abs(degree - currentDirection) > 5) {
             currentDirection = robot.gyro.getHeading();
 
             int error = degree - currentDirection;

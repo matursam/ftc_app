@@ -18,8 +18,8 @@ public class BasicBot extends OpMode {
     @Override
     public void init() {
         robot.init(hardwareMap);
-        telemetry.addData("Status", "Initialized");
-        telemetry.addData("Status", "Initialized");
+        telemetry.addData("Status", "Initialized (waiting for start)");
+        telemetry.update();
     }
 
     /*
@@ -27,6 +27,7 @@ public class BasicBot extends OpMode {
      */
     @Override
     public void init_loop() {
+
     }
 
     /*
@@ -34,6 +35,7 @@ public class BasicBot extends OpMode {
      */
     @Override
     public void start() {
+
     }
 
     /*
@@ -53,6 +55,7 @@ public class BasicBot extends OpMode {
         robot.r2.setPower(right);
 
         // Send telemetry message to signify robot running;
+        telemetry.addData("Status", "Running...");
         telemetry.addData("left", "%.2f", left);
         telemetry.addData("right", "%.2f", right);
         telemetry.update();
@@ -63,5 +66,6 @@ public class BasicBot extends OpMode {
      */
     @Override
     public void stop() {
+
     }
 }

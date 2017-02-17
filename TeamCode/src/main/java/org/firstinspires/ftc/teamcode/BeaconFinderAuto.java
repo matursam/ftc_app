@@ -11,6 +11,7 @@ import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcontroller.internal.CameraProcessor;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -146,7 +147,7 @@ public class BeaconFinderAuto extends CameraProcessor {
         while(opModeIsActive()) {
             telemetry.addData("Status:", "Idling...");
             telemetry.addData("Returned Side:", returnedSide);
-            telemetry.addData("Distance: ", robot.getWallDistance());
+            telemetry.addData("Distance: ", getWallDistance());
             telemetry.update();
             idle();
         }
@@ -266,6 +267,33 @@ public class BeaconFinderAuto extends CameraProcessor {
         setDrivePower(0);
     }
 
+    public void gyroTurn2(int targetDirection) {
+        int currentDirection = robot.gyro.getHeading();
+        double turnMultiplier = 0.06; //P value in PID-speak
+        double integral;
+
+        while(Math.abs(targetDirection - currentDirection) > 3) {
+            currentDirection = robot.gyro.getIntegratedZValue();
+
+            int error = targetDirection - currentDirection;
+            double speedAdjustment = turnMultiplier * error;
+
+            double leftPower = 0.5 * Range.clip(speedAdjustment, -1, 1);
+            double rightPower = 0.5 * Range.clip(-speedAdjustment, -1, 1);
+
+            //Finally, assign these values to the motors
+            robot.r1.setPower(rightPower);
+            robot.r2.setPower(rightPower);
+            robot.l1.setPower(leftPower);
+            robot.l2.setPower(leftPower);
+        }
+
+        robot.r1.setPower(0);
+        robot.r2.setPower(0);
+        robot.l1.setPower(0);
+        robot.l2.setPower(0);
+    }
+
     public void moveStraight(double inches, double power) throws InterruptedException {
         robot.l1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         robot.r1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -353,5 +381,9 @@ public class BeaconFinderAuto extends CameraProcessor {
         } else {
             return "ERROR";
         }
+    }
+
+    public double getWallDistance() {
+        return (robot.range1.getDistance(DistanceUnit.CM) + robot.range2.getDistance(DistanceUnit.CM)) / 2;
     }
 }

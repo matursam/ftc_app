@@ -41,13 +41,13 @@ public class MotorSpinner extends LinearOpMode {
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
-        // run until the end of the match (driver presses STOP)
-        while (opModeIsActive()) {
-            float power = 0;
+        // Run until the end of the match (driver presses STOP)
+        while(opModeIsActive()) {
+            double power = 0;
 
-            if (gamepad1.a) {
+            if(gamepad1.a) {
                 power = 1;
-            } else if (gamepad1.y) {
+            } else if(gamepad1.y) {
                 power = -1;
             }
 
@@ -57,7 +57,7 @@ public class MotorSpinner extends LinearOpMode {
             telemetry.addData("Motor", "%.2f", motor.getPower());
             telemetry.update();
 
-            idle(); // Always call idle() at the bottom of your while(opModeIsActive()) loop
+            idle();
         }
     }
 }

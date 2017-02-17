@@ -33,8 +33,7 @@ public class CameraAuto extends CameraProcessor {
 
         }
 
-        while (opModeIsActive()) {
-
+        while(opModeIsActive()) {
             averageColor();
 
             /*
@@ -95,7 +94,7 @@ public class CameraAuto extends CameraProcessor {
     }
 
     public void whichSide() {
-        while (!imageReady()) {
+        while(!imageReady()) {
             telemetry.addData("Camera:", "Waiting for image...");
             telemetry.update();
         }
@@ -167,7 +166,7 @@ public class CameraAuto extends CameraProcessor {
     }
 
     public void averageColor() {
-        while (!imageReady()) {
+        while(!imageReady()) {
             telemetry.addData("Camera:", "Waiting for image...");
             telemetry.update();
         }

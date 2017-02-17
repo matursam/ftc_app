@@ -38,17 +38,16 @@ public class BasicBotAuto extends LinearOpMode {
         robot.init(hardwareMap);
 
         // Wait for the game to start (driver presses PLAY)
+        telemetry.addData("Status", "Initialized (waiting for start)");
+        telemetry.update();
         waitForStart();
 
-
-
-        // run until the end of the match (driver presses STOP)
+        // Run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
             telemetry.addData("Status", "Running...");
             telemetry.update();
 
-
-            idle(); // Always call idle() at the bottom of your while(opModeIsActive()) loop
+            idle();
         }
     }
 }
