@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode;
 
-import android.graphics.Bitmap;
-
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.Range;

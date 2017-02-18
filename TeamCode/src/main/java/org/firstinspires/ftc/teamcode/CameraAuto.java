@@ -4,17 +4,7 @@ import android.graphics.Bitmap;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.robotcontroller.internal.CameraProcessor;
 
-import java.util.ArrayList;
-import java.util.List;
-
-/**
- * TeleOp Mode
- * <p/>
- * Enables control of the robot via the gamepad
- */
-
 @TeleOp(name = "Camera: Auto", group = "Linear OpMode")
-//@Disabled
 public class CameraAuto extends CameraProcessor {
     @Override
     public void runOpMode() {
@@ -34,9 +24,8 @@ public class CameraAuto extends CameraProcessor {
         }
 
         while(opModeIsActive()) {
-            averageColor();
+            //averageColor();
 
-            /*
             if(!imageReady()) { // only do this if an image has been returned from the camera
                 telemetry.addData("Status:", "Waiting for image...");
                 telemetry.update();
@@ -87,10 +76,9 @@ public class CameraAuto extends CameraProcessor {
             telemetry.addData("Image right:", right_intensity);
             telemetry.addData("Image result:", "left: " + left + " | right: " + right);
             telemetry.update();
-            */
         }
 
-        stopCamera();
+        //stopCamera();
     }
 
     public void whichSide() {
@@ -116,19 +104,19 @@ public class CameraAuto extends CameraProcessor {
                 double percent_blue = 0;
                 double percent_red = 0;
 
-                try {
-                    percent_blue = pixel_blue / (pixel_red + pixel_blue + pixel_green);
-                    percent_red = pixel_red / (pixel_red + pixel_blue + pixel_green);
-                } catch(ArithmeticException e) {
+                //try {
+                    percent_blue = pixel_blue / (pixel_red + pixel_blue + pixel_green + 1);
+                    percent_red = pixel_red / (pixel_red + pixel_blue + pixel_green + 1);
+                //} catch(ArithmeticException e) {
+//
+                //}
 
-                }
-
-                if (percent_blue > 0.5) {
+                if (percent_blue > 0.2) {
                     bluePixels += x;
                     bluePixelsCount++;
                 }
 
-                if (percent_red > 0.5) {
+                if (percent_red > 0.2) {
                     redPixels += x;
                     redPixelsCount++;
                 }
@@ -173,10 +161,11 @@ public class CameraAuto extends CameraProcessor {
 
         Bitmap image = convertYuvImageToRgb(yuvImage, size.width, size.height, 1);
 
-        int redColor = 0;
+        double redColor = 0;
         int redCount = 0;
-        int blueColor = 0;
+        double blueColor = 0;
         int blueCount = 0;
+        int error = 0;
 
         for (int x = 0; x < image.getWidth(); x++) {
             for (int y = 0; y < image.getHeight(); y++) {
@@ -192,14 +181,14 @@ public class CameraAuto extends CameraProcessor {
                     percent_red = pixel_red / (pixel_red + pixel_blue + pixel_green);
                     percent_blue = pixel_blue / (pixel_red + pixel_blue + pixel_green);
                 } catch(ArithmeticException e) {
-
+                    error++;
                 }
 
                 redColor += percent_red;
                 redCount++;
 
                 blueColor += percent_blue;
-                blueColor++;
+                blueCount++;
             }
         }
 
@@ -210,8 +199,9 @@ public class CameraAuto extends CameraProcessor {
 
         }
 
-        telemetry.addData("Red: ", redCount);
-        telemetry.addData("Blue: ", blueCount);
+        telemetry.addData("Red Color: ", redColor);
+        telemetry.addData("Blue Color: ", blueColor);
+        telemetry.addData("Error: ", error);
         telemetry.update();
     }
 }

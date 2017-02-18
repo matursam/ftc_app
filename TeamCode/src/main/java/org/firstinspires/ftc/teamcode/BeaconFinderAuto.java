@@ -1,20 +1,13 @@
 package org.firstinspires.ftc.teamcode;
 
 import android.graphics.Bitmap;
-import android.provider.Settings;
 
-import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.GyroSensor;
-import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcontroller.internal.CameraProcessor;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.firstinspires.ftc.teamcode.EeyoreHardware.COUNTS_PER_INCH;
 
@@ -24,6 +17,16 @@ public class BeaconFinderAuto extends CameraProcessor {
 
     String teamColor = "NONE"; //Initialized as NONE because I don't want color and teamColor to be equal initially
     String returnedSide;
+
+    class BeaconColors {
+        String left = null;
+        String right = null;
+
+        BeaconColors(String left, String right) {
+            this.left = left;
+            this.right = right;
+        }
+    }
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -68,55 +71,45 @@ public class BeaconFinderAuto extends CameraProcessor {
         telemetry.addData("Status:", "Moving...");
         telemetry.update();
 
-        turnTester();
-
-        /*
         // Move off of the wall
-        moveStraight(26, 0.2);
-        Thread.sleep(1000);
-        gyroTurn(90);
-        Thread.sleep(2000);
-        gyroTurn(180);
-
-        // At this point, we can try to score the pre-loaded balls
-        /*shootShooter(1);
-        Thread.sleep(800);
-        shootShooter(0);
+        moveStraight(14, 0.4);
         Thread.sleep(1000);
         shootShooter(1);
-        Thread.sleep(1000);
-        shootShooter(0);
+        Thread.sleep(500);
+        shootShooter(1);
+        Thread.sleep(500);
+        moveStraight(6, 0.4);
 
         // Now we move on to the beacons
         if(teamColor == "RED") { //We are red
-            gyroTurn(315);
-            moveStraight(19);
-            gyroTurn(270);
-            moveStraight(37);
-            Thread.sleep(1000);
+            gyroTurn(45);
+            moveStraight(18, 0.4);
+            gyroTurn(90);
+            moveStraight(31, 0.4);
+            Thread.sleep(500);
             gyroTurn(180);
-            Thread.sleep(1000);
+            Thread.sleep(500);
 
             robot.l1.setDirection(DcMotor.Direction.FORWARD);
             robot.l2.setDirection(DcMotor.Direction.FORWARD);
             robot.r1.setDirection(DcMotor.Direction.REVERSE);
             robot.r2.setDirection(DcMotor.Direction.REVERSE);
-
         } else { //We are blue
-            gyroTurn(45);
-            moveStraight(23);
-            gyroTurn(90);
-            moveStraight(33);
-            Thread.sleep(1000);
+            gyroTurn(-45);
+            moveStraight(18, 0.4);
+            gyroTurn(-90);
+            moveStraight(31, 0.4);
+            Thread.sleep(500);
             gyroTurn(0);
-            Thread.sleep(1000);
+            Thread.sleep(500);
         }
 
         // Press the beacons
+        gyroTurn(0);
         driveToLine();
-        Thread.sleep(2000);
+        Thread.sleep(5000);
 
-        String beacon1 = getBeaconSide();
+        String beacon1 = getBeaconSide(25);
 
         if(beacon1 == "LEFT") {
             pressLeftButton();
@@ -125,12 +118,12 @@ public class BeaconFinderAuto extends CameraProcessor {
         }
 
         // Move partly to the second beacon
-        moveStraight(32);
+        moveStraight(40, 0.6);
 
         driveToLine();
         Thread.sleep(2000);
 
-        String beacon2 = getBeaconSide();
+        String beacon2 = getBeaconSide(25);
 
         if(beacon2 == "LEFT") {
             pressLeftButton();
@@ -141,21 +134,23 @@ public class BeaconFinderAuto extends CameraProcessor {
         telemetry.addData("Status:", "Shutting down...");
         telemetry.update();
 
-        stopCamera();*/
+        stopCamera();
 
         // Run until the end of the match (driver presses STOP)
         while(opModeIsActive()) {
             telemetry.addData("Status:", "Idling...");
-            telemetry.addData("Returned Side:", returnedSide);
             telemetry.addData("Distance: ", getWallDistance());
             telemetry.update();
             idle();
         }
     }
 
-    public void shootShooter(int power) {
+    public void shootShooter(int power) throws InterruptedException {
         robot.shooter1.setPower(power);
         robot.shooter2.setPower(power);
+        Thread.sleep(750);
+        robot.shooter1.setPower(0);
+        robot.shooter2.setPower(0);
     }
 
     public void setDrivePower(double power) {
@@ -194,11 +189,13 @@ public class BeaconFinderAuto extends CameraProcessor {
     public void turnTester() throws InterruptedException {
         gyroTurn(90);
         Thread.sleep(3000);
-        gyroTurn(-90);
+        gyroTurn(45);
         Thread.sleep(3000);
         gyroTurn(0);
         Thread.sleep(3000);
-        gyroTurn(180);
+        gyroTurn(-45);
+        Thread.sleep(3000);
+        gyroTurn(-90);
         Thread.sleep(3000);
         gyroTurn(-180);
         Thread.sleep(3000);
@@ -210,13 +207,12 @@ public class BeaconFinderAuto extends CameraProcessor {
         robot.r1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         idle();
 
-        double Kp = 1.25
-                ; //2.25 was the ideal time with 2.5 d and no i
-        double Ki = 0.001;
-        double Kd = 1.25;
+        double Kp = 0.8125;//0.8125
+        double Ki = 0.004;//0.006
+        double Kd = 0.5;//0.5
         double integral = 0;
         double heading;
-        double buffer = 2;
+        double buffer = 4;
         double error_prior = 0;
 
         int successfulLoops = 0;
@@ -225,17 +221,39 @@ public class BeaconFinderAuto extends CameraProcessor {
             heading = robot.gyro.getIntegratedZValue();
             double error = (target - heading) / 360;
 
-            if(error > 0.035)
-            {
-                integral *= 0.25;
-            }
-
             integral = integral + error;
 
+            if(integral > 75) {
+                integral = 75;
+            } else if(integral < -75) {
+                integral = -75;
+            }
+
+            if(integral < 60 && integral > 0) {
+                integral = 60;
+            } else if(integral > -60 && integral < 0) {
+                integral = -60;
+            }
 
             double derivative = error - error_prior;
 
-            double output = Range.clip((Kp * error + Ki * integral + Kd * derivative), -0.35, 0.35);
+            if(error < 0 && integral > 0) {
+                integral = 0;
+            }
+
+            if(error > 0 && integral < 0) {
+                integral = 0;
+            }
+
+            double output = 0.8 * Range.clip((Kp * error + Ki * integral + Kd * derivative), -1, 1);
+
+            if(Math.abs(heading - target) < buffer) {
+                successfulLoops += 1;
+                integral = 0;
+                output = 0;
+            } else {
+                successfulLoops = 0;
+            }
 
             robot.l1.setPower(-output);
             robot.l2.setPower(-output);
@@ -253,45 +271,18 @@ public class BeaconFinderAuto extends CameraProcessor {
             if(!opModeIsActive()) {
                 break;
             }
-            if(Math.abs(heading - target) < buffer)
-            {
+
+            if(Math.abs(heading - target) <= buffer) {
                 successfulLoops += 1;
                 integral = 0;
-            }
-            else
-            {
+            } else {
                 successfulLoops = 0;
             }
+
+            idle();
         }
 
         setDrivePower(0);
-    }
-
-    public void gyroTurn2(int targetDirection) {
-        int currentDirection = robot.gyro.getHeading();
-        double turnMultiplier = 0.06; //P value in PID-speak
-        double integral;
-
-        while(Math.abs(targetDirection - currentDirection) > 3) {
-            currentDirection = robot.gyro.getIntegratedZValue();
-
-            int error = targetDirection - currentDirection;
-            double speedAdjustment = turnMultiplier * error;
-
-            double leftPower = 0.5 * Range.clip(speedAdjustment, -1, 1);
-            double rightPower = 0.5 * Range.clip(-speedAdjustment, -1, 1);
-
-            //Finally, assign these values to the motors
-            robot.r1.setPower(rightPower);
-            robot.r2.setPower(rightPower);
-            robot.l1.setPower(leftPower);
-            robot.l2.setPower(leftPower);
-        }
-
-        robot.r1.setPower(0);
-        robot.r2.setPower(0);
-        robot.l1.setPower(0);
-        robot.l2.setPower(0);
     }
 
     public void moveStraight(double inches, double power) throws InterruptedException {
@@ -323,17 +314,48 @@ public class BeaconFinderAuto extends CameraProcessor {
     public void driveToLine() throws InterruptedException {
         while(robot.color.alpha() == 0) {
             setDrivePower(0.1);
-            Thread.sleep(100);
+            Thread.sleep(50);
             setDrivePower(0);
-            telemetry.addData("Sensor Color", robot.color.alpha());
-            telemetry.update();
             Thread.sleep(100);
         }
 
         setDrivePower(0);
     }
 
-    public String getBeaconSide() {
+    public String getBeaconSide(int passes) throws InterruptedException {
+        int leftRed = 0;
+        int leftBlue = 0;
+
+        for(int i = 0; i < passes; i++) {
+            String leftColor = getBeaconColor();
+
+            if(leftColor == "BLUE") {
+                leftBlue++;
+            } else if(leftColor == "RED") {
+                leftRed++;
+            }
+        }
+
+        String left;
+
+        if(leftRed > leftBlue) {
+            left = "RED";
+        } else if(leftBlue > leftRed) {
+            left = "BLUE";
+        } else {
+            return "ERROR";
+        }
+
+        if(left == teamColor) {
+            return "LEFT";
+        } else if(left != teamColor) {
+            return "RIGHT";
+        }
+
+        return "ERROR";
+    }
+
+    public String getBeaconColor() {
         while(!imageReady()) {
             telemetry.addData("Camera:", "Waiting for image...");
             telemetry.update();
@@ -364,23 +386,16 @@ public class BeaconFinderAuto extends CameraProcessor {
         }
 
         String left;
-        String right;
 
         if(left_intensity < right_intensity) {
             left = "BLUE";
-            right = "RED";
-        } else {
+        } else if(right_intensity > left_intensity) {
             left = "RED";
-            right = "BLUE";
+        } else {
+            left = "ERROR";
         }
 
-        if(left == teamColor) {
-            return "LEFT";
-        } else if(right == teamColor) {
-            return "RIGHT";
-        } else {
-            return "ERROR";
-        }
+        return left;
     }
 
     public double getWallDistance() {
