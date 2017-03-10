@@ -1,12 +1,15 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.adafruit.BNO055IMU;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cRangeSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
+
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.Quaternion;
 
 public class EeyoreHardware
 {
@@ -26,9 +29,8 @@ public class EeyoreHardware
     public Servo leftPresser = null;
     public Servo rightPresser = null;
     public ColorSensor color = null;
-    public ModernRoboticsI2cGyro gyro = null;
+    public BNO055IMU gyro = null;
     public ModernRoboticsI2cRangeSensor range1 = null;
-    public ModernRoboticsI2cRangeSensor range2 = null;
 
     /* Local OpMode members. */
     HardwareMap hwMap = null;
@@ -55,9 +57,8 @@ public class EeyoreHardware
         leftPresser = hwMap.servo.get("button_left");
         rightPresser = hwMap.servo.get("button_right");
         color = hwMap.colorSensor.get("color");
-        gyro = (ModernRoboticsI2cGyro)hwMap.gyroSensor.get("gyro");
         range1 = hwMap.get(ModernRoboticsI2cRangeSensor.class, "range1");
-        range2 = hwMap.get(ModernRoboticsI2cRangeSensor.class, "range2");
+        gyro = ahwMap.get(BNO055IMU.class, "gyro");
 
         // Set motor direction
         l1.setDirection(DcMotor.Direction.REVERSE);
@@ -94,6 +95,45 @@ public class EeyoreHardware
         // Initialize servos
         leftPresser.setPosition(0.8);
         rightPresser.setPosition(0.8);
+
+        // Initialize gyro
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.mode = BNO055IMU.SensorMode.IMU;
+        parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
+        gyro.initialize(parameters);
+    }
+
+    public double getGyroRoll() {
+        Quaternion angles = gyro.getQuaternionOrientation();
+
+        double w = angles.w;
+        double x = angles.x;
+        double y = angles.y;
+        double z = angles.z;
+
+        return Math.atan2(2 * (w * x + y * z), 1 - 2 * (x * x + y * y)) * 180.0 / Math.PI;
+    }
+
+    public double getGyroPitch() {
+        Quaternion angles = gyro.getQuaternionOrientation();
+
+        double w = angles.w;
+        double x = angles.x;
+        double y = angles.y;
+        double z = angles.z;
+
+        return Math.asin(2 * (w * y - x * z)) * 180.0 / Math.PI;
+    }
+
+    public double getGyroYaw() {
+        Quaternion angles = gyro.getQuaternionOrientation();
+
+        double w = angles.w;
+        double x = angles.x;
+        double y = angles.y;
+        double z = angles.z;
+
+        return Math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z)) * 180.0 / Math.PI;
     }
 
     public void waitForTick(long periodMs) throws InterruptedException {
@@ -106,6 +146,4 @@ public class EeyoreHardware
         // Reset the cycle clock for the next pass.
         period.reset();
     }
-
-
 }

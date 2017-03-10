@@ -20,12 +20,12 @@ public class SimpleShooterAuto extends CameraProcessor {
         telemetry.update();
 
         // Calibrate gyro
-        robot.gyro.calibrate();
+        /*robot.gyro.calibrate();
 
         while(robot.gyro.isCalibrating()) {
             Thread.sleep(50);
             idle();
-        }
+        }*/
 
         // Initiate camera
         setCameraDownsampling(9);
@@ -54,7 +54,7 @@ public class SimpleShooterAuto extends CameraProcessor {
 
         // Move forward to knock off the yoga ball
         moveStraight(20);
-        gyroTurn(45);
+        //gyroTurn(45);
 
         telemetry.addData("Status:", "Shutting down...");
         telemetry.update();
@@ -106,8 +106,8 @@ public class SimpleShooterAuto extends CameraProcessor {
         robot.r2.setPower(0);
     }
 
-    public void gyroTurn(int degree) throws InterruptedException {
-        int currentDirection = robot.gyro.getHeading();
+    /*public void gyroTurn(int degree) throws InterruptedException {
+        float currentDirection = robot.gyro.getHeading();
         double turnMultiplier = 0.05;
 
         robot.l1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -116,16 +116,15 @@ public class SimpleShooterAuto extends CameraProcessor {
 
         // First, check to see if we are pointing in the correct direction
         while(Math.abs(degree - currentDirection) > 5) {
-            currentDirection = robot.gyro.getHeading();
+            currentDirection = robot.gyro.getHEading();
 
-            int error = degree - currentDirection;
+            float error = degree - currentDirection;
             double speedAdjustment = turnMultiplier * error;
 
             double leftPower = 0.5 * Range.clip(speedAdjustment, -1, 1);
             double rightPower = 0.5 * Range.clip(-speedAdjustment, -1, 1);
 
             // Finally, assign these values to the motors
-
             robot.r1.setPower(rightPower);
             robot.r2.setPower(rightPower);
             robot.l1.setPower(leftPower);
@@ -137,5 +136,5 @@ public class SimpleShooterAuto extends CameraProcessor {
         robot.r2.setPower(0);
         robot.l1.setPower(0);
         robot.l2.setPower(0);
-    }
+    }*/
 }

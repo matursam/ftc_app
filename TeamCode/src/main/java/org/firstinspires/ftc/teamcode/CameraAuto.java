@@ -36,45 +36,42 @@ public class CameraAuto extends CameraProcessor {
 
             Bitmap image = convertYuvImageToRgb(yuvImage, size.width, size.height, 1);
 
-            int left_intensity = 0;
-
-            for(int x = 0; x < image.getWidth() / 2; x++) {
-                for(int y = 0; y < image.getHeight(); y++) {
-                    int pixel = image.getPixel(x, y);
-                    int pixel_blue = blue(pixel);
-
-                    left_intensity += pixel_blue;
-                }
-            }
-
-            int right_intensity = 0;
+            int red_intensity = 0;
+            int blue_intensity = 0;
 
             for(int x = image.getWidth() / 2; x < image.getWidth(); x++) {
                 for(int y = 0; y < image.getHeight(); y++) {
                     int pixel = image.getPixel(x, y);
-                    int pixel_blue = blue(pixel);
-
-                    right_intensity += pixel_blue;
+                    if(red(pixel) > blue(pixel))
+                    {
+                        red_intensity += red(pixel);
+                    }
+                    else
+                    {
+                        blue_intensity += blue(pixel);
+                    }
                 }
             }
 
             String left;
-            String right;
 
-            if(left_intensity < right_intensity) {
+            if(red_intensity == 0) //Homemade exception handling XD
+            {
+                red_intensity += 1;
+            }
+
+            if(blue_intensity / red_intensity > 100) {
                 left = "BLUE";
-                right = "RED";
             } else {
                 left = "RED";
-                right = "BLUE";
             }
 
             telemetry.addData("Status:", "Running");
             telemetry.addData("Time:", System.currentTimeMillis() - startTime);
             telemetry.addData("Image size:", image.getWidth() + "x" + image.getHeight() + " (" + size.width + "x" + size.height + ")");
-            telemetry.addData("Image left:", left_intensity);
-            telemetry.addData("Image right:", right_intensity);
-            telemetry.addData("Image result:", "left: " + left + " | right: " + right);
+            telemetry.addData("Image red:", red_intensity);
+            telemetry.addData("Image blue:", blue_intensity);
+            telemetry.addData("Image result:", "left: " + left);
             telemetry.update();
         }
 

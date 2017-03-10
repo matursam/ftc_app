@@ -35,16 +35,6 @@ public class BeaconFinderAuto extends CameraProcessor {
         telemetry.addData("Status:", "Initializing");
         telemetry.update();
 
-        // Calibrate gyro
-        robot.gyro.calibrate();
-
-        while(robot.gyro.isCalibrating()) {
-            Thread.sleep(50);
-            idle();
-        }
-
-        Thread.sleep(2000);
-
         // Initiate camera
         setCameraDownsampling(9);
         startCamera();
@@ -71,66 +61,75 @@ public class BeaconFinderAuto extends CameraProcessor {
         telemetry.addData("Status:", "Moving...");
         telemetry.update();
 
+        turnTester();
+
         // Move off of the wall
-        moveStraight(14, 0.4);
-        Thread.sleep(1000);
+        /*moveStraight(13, 0.4);
+        Thread.sleep(1500); // Wait for robot to settle
         shootShooter(1);
-        Thread.sleep(500);
+        Thread.sleep(500); // Pause in-between shots
         shootShooter(1);
-        Thread.sleep(500);
-        moveStraight(6, 0.4);
+        moveStraight(7, 0.4);
 
         // Now we move on to the beacons
         if(teamColor == "RED") { //We are red
             gyroTurn(45);
             moveStraight(18, 0.4);
             gyroTurn(90);
-            moveStraight(31, 0.4);
-            Thread.sleep(500);
+            moveStraight(33, 0.4);
             gyroTurn(180);
-            Thread.sleep(500);
-
-            robot.l1.setDirection(DcMotor.Direction.FORWARD);
-            robot.l2.setDirection(DcMotor.Direction.FORWARD);
-            robot.r1.setDirection(DcMotor.Direction.REVERSE);
-            robot.r2.setDirection(DcMotor.Direction.REVERSE);
-        } else { //We are blue
+        } else if(teamColor == "BLUE") { //We are blue
             gyroTurn(-45);
             moveStraight(18, 0.4);
             gyroTurn(-90);
-            moveStraight(31, 0.4);
-            Thread.sleep(500);
+            moveStraight(33, 0.4);
             gyroTurn(0);
-            Thread.sleep(500);
+        }*/
+
+        /* Move to and press the first beacon*/
+        /*if(teamColor == "RED") {
+            driveToLine(-0.1);
+        } else if(teamColor == "BLUE"){
+            driveToLine(0.1);
         }
 
-        // Press the beacons
-        gyroTurn(0);
-        driveToLine();
-        Thread.sleep(5000);
-
-        String beacon1 = getBeaconSide(25);
+        Thread.sleep(1000); // Wait for robot to settle
+        String beacon1 = getBeaconSide(5);
 
         if(beacon1 == "LEFT") {
             pressLeftButton();
         } else if(beacon1 == "RIGHT") {
             pressRightButton();
+        }*/
+        /* End execution of first beacon navigation */
+
+        // Realign the robot in preparation for moving to the second beacon
+        /*if(teamColor == "RED") {
+            gyroTurn(180 - 2);
+        } else if(teamColor == "BLUE") {
+            gyroTurn(0 + 2);
+        }*/
+
+        /* Move to and press the second beacon*/
+        /*if(teamColor == "RED") {
+            moveStraight(40, -0.5); // Mind the gap between beacons
+            driveToLine(-0.1);
+        } else if(teamColor == "BLUE") {
+            moveStraight(40, 0.5); // Mind the gap between beacons
+            driveToLine(0.1);
         }
 
-        // Move partly to the second beacon
-        moveStraight(40, 0.6);
-
-        driveToLine();
-        Thread.sleep(2000);
-
-        String beacon2 = getBeaconSide(25);
+        Thread.sleep(1000);
+        String beacon2 = getBeaconSide(5);
 
         if(beacon2 == "LEFT") {
             pressLeftButton();
         } else if(beacon2 == "RIGHT") {
             pressRightButton();
-        }
+        }*/
+        /* End execution of second beacon navigation */
 
+        // End routine
         telemetry.addData("Status:", "Shutting down...");
         telemetry.update();
 
@@ -218,7 +217,7 @@ public class BeaconFinderAuto extends CameraProcessor {
         int successfulLoops = 0;
 
         while(successfulLoops < 5000) {
-            heading = robot.gyro.getIntegratedZValue();
+            heading = robot.getGyroYaw();
             double error = (target - heading) / 360;
 
             integral = integral + error;
@@ -311,9 +310,9 @@ public class BeaconFinderAuto extends CameraProcessor {
         setDrivePower(0);
     }
 
-    public void driveToLine() throws InterruptedException {
+    public void driveToLine(double power) throws InterruptedException {
         while(robot.color.alpha() == 0) {
-            setDrivePower(0.1);
+            setDrivePower(power);
             Thread.sleep(50);
             setDrivePower(0);
             Thread.sleep(100);
@@ -348,11 +347,9 @@ public class BeaconFinderAuto extends CameraProcessor {
 
         if(left == teamColor) {
             return "LEFT";
-        } else if(left != teamColor) {
+        } else {
             return "RIGHT";
         }
-
-        return "ERROR";
     }
 
     public String getBeaconColor() {
@@ -363,42 +360,37 @@ public class BeaconFinderAuto extends CameraProcessor {
 
         Bitmap image = convertYuvImageToRgb(yuvImage, size.width, size.height, 1);
 
-        int left_intensity = 0;
-
-        for(int x = 0; x < image.getWidth() / 2; x++) {
-            for(int y = 0; y < image.getHeight(); y++) {
-                int pixel = image.getPixel(x, y);
-                int pixel_blue = blue(pixel);
-
-                left_intensity += pixel_blue;
-            }
-        }
-
-        int right_intensity = 0;
+        int red_intensity = 0;
+        int blue_intensity = 0;
 
         for(int x = image.getWidth() / 2; x < image.getWidth(); x++) {
             for(int y = 0; y < image.getHeight(); y++) {
                 int pixel = image.getPixel(x, y);
-                int pixel_blue = blue(pixel);
 
-                right_intensity += pixel_blue;
+                if(red(pixel) > blue(pixel)) {
+                    red_intensity += red(pixel);
+                } else {
+                    blue_intensity += blue(pixel);
+                }
             }
         }
 
         String left;
 
-        if(left_intensity < right_intensity) {
+        if(red_intensity == 0) { // Homemade exception handling (!)
+            red_intensity += 1;
+        }
+
+        if(blue_intensity / red_intensity > 100) {
             left = "BLUE";
-        } else if(right_intensity > left_intensity) {
-            left = "RED";
         } else {
-            left = "ERROR";
+            left = "RED";
         }
 
         return left;
     }
 
     public double getWallDistance() {
-        return (robot.range1.getDistance(DistanceUnit.CM) + robot.range2.getDistance(DistanceUnit.CM)) / 2;
+        return robot.range1.getDistance(DistanceUnit.CM);
     }
 }
