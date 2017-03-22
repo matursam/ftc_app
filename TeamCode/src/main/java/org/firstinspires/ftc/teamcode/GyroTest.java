@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.adafruit.BNO055IMU;
+import com.qualcomm.hardware.adafruit.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -30,21 +31,28 @@ public class GyroTest extends LinearOpMode {
         gyro = hardwareMap.get(BNO055IMU.class, "gyro");
 
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        parameters.mode = BNO055IMU.SensorMode.IMU;
-        parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
+        parameters.mode = BNO055IMU.SensorMode.NDOF;
+        parameters.useExternalCrystal = true;
+        parameters.calibrationDataFile = "AdafruitIMUCalibration.json";
+        parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
+        parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.loggingTag = "IMU";
+        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
         gyro.initialize(parameters);
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
         // Run until the end of the match (driver presses STOP)
-        while(opModeIsActive()) {
+        while (opModeIsActive()) {
             Position position = gyro.getPosition();
 
             telemetry.addData("Status", "Running...");
-            telemetry.addData("Roll", "%.5f", normalizeAngle(getGyroRoll()));
-            telemetry.addData("Pitch", "%.5f", normalizeAngle(getGyroPitch()));
-            telemetry.addData("Yaw", "%.5f", normalizeAngle(getGyroYaw()));
+            telemetry.addData("Roll", "%.5f", getGyroRoll());
+            telemetry.addData("Pitch", "%.5f", getGyroPitch());
+            telemetry.addData("Yaw", "%.5f", getGyroYaw());
+            telemetry.addData("Angle (LEFT)", "%.5f", getRotAngle("LEFT"));
+            telemetry.addData("Angle (RIGHT)", "%.5f", getRotAngle("RIGHT"));
             telemetry.addData("Position", position.x + "/" + position.y + "/" + position.z);
             telemetry.update();
 
@@ -60,7 +68,7 @@ public class GyroTest extends LinearOpMode {
         double y = angles.y;
         double z = angles.z;
 
-        return Math.atan2(2 * (w * x + y * z), 1 - 2 * (x * x + y * y)) * 180.0 / Math.PI;
+        return Math.toDegrees(Math.atan2(2 * (w * x + y * z), 1 - 2 * (x * x + y * y)));
     }
 
     public double getGyroPitch() {
@@ -71,7 +79,7 @@ public class GyroTest extends LinearOpMode {
         double y = angles.y;
         double z = angles.z;
 
-        return Math.asin(2 * (w * y - x * z)) * 180.0 / Math.PI;
+        return Math.toDegrees(Math.asin(2 * (w * y - x * z)));
     }
 
     public double getGyroYaw() {
@@ -82,10 +90,22 @@ public class GyroTest extends LinearOpMode {
         double y = angles.y;
         double z = angles.z;
 
-        return Math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z)) * 180.0 / Math.PI;
+        return Math.toDegrees(Math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z)));
     }
 
-    public double normalizeAngle(double angle) {
-        return angle - (angle > 0 ? 360 : 0);
+    public double getRotAngle(String direction) {
+        double angle = getGyroYaw();
+
+        if(direction == "LEFT") {
+            if(angle < 0.0) {
+                angle += 360;
+            }
+        } else if(direction == "RIGHT") {
+            if(angle > 0.0) {
+                angle -= 360;
+            }
+        }
+
+        return angle;
     }
 }

@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.adafruit.BNO055IMU;
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cRangeSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -29,7 +30,7 @@ public class EeyoreHardware
     public Servo leftPresser = null;
     public Servo rightPresser = null;
     public ColorSensor color = null;
-    public BNO055IMU gyro = null;
+    public ModernRoboticsI2cGyro gyro = null;
     public ModernRoboticsI2cRangeSensor range1 = null;
 
     /* Local OpMode members. */
@@ -58,7 +59,7 @@ public class EeyoreHardware
         rightPresser = hwMap.servo.get("button_right");
         color = hwMap.colorSensor.get("color");
         range1 = hwMap.get(ModernRoboticsI2cRangeSensor.class, "range1");
-        gyro = ahwMap.get(BNO055IMU.class, "gyro");
+        gyro = (ModernRoboticsI2cGyro)ahwMap.gyroSensor.get("gyro");
 
         // Set motor direction
         l1.setDirection(DcMotor.Direction.REVERSE);
@@ -95,45 +96,6 @@ public class EeyoreHardware
         // Initialize servos
         leftPresser.setPosition(0.8);
         rightPresser.setPosition(0.8);
-
-        // Initialize gyro
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        parameters.mode = BNO055IMU.SensorMode.IMU;
-        parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
-        gyro.initialize(parameters);
-    }
-
-    public double getGyroRoll() {
-        Quaternion angles = gyro.getQuaternionOrientation();
-
-        double w = angles.w;
-        double x = angles.x;
-        double y = angles.y;
-        double z = angles.z;
-
-        return Math.atan2(2 * (w * x + y * z), 1 - 2 * (x * x + y * y)) * 180.0 / Math.PI;
-    }
-
-    public double getGyroPitch() {
-        Quaternion angles = gyro.getQuaternionOrientation();
-
-        double w = angles.w;
-        double x = angles.x;
-        double y = angles.y;
-        double z = angles.z;
-
-        return Math.asin(2 * (w * y - x * z)) * 180.0 / Math.PI;
-    }
-
-    public double getGyroYaw() {
-        Quaternion angles = gyro.getQuaternionOrientation();
-
-        double w = angles.w;
-        double x = angles.x;
-        double y = angles.y;
-        double z = angles.z;
-
-        return Math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z)) * 180.0 / Math.PI;
     }
 
     public void waitForTick(long periodMs) throws InterruptedException {

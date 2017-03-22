@@ -8,25 +8,18 @@ import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcontroller.internal.CameraProcessor;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 
 import static org.firstinspires.ftc.teamcode.EeyoreHardware.COUNTS_PER_INCH;
 
-@Autonomous(name="Beacon Finder", group="Iterative Opmode")  // @Autonomous(...) is the other common choice
-public class BeaconFinderAuto extends CameraProcessor {
+@Autonomous(name="Buttered Cardboard (Ball Score)", group="Iterative Opmode")  // @Autonomous(...) is the other common choice
+public class EeyoreAuto extends CameraProcessor {
     EeyoreHardware robot = new EeyoreHardware();
 
     String teamColor = "NONE"; //Initialized as NONE because I don't want color and teamColor to be equal initially
-    String returnedSide;
+    boolean delay = false;
+    int programSelection = 0;
 
-    class BeaconColors {
-        String left = null;
-        String right = null;
-
-        BeaconColors(String left, String right) {
-            this.left = left;
-            this.right = right;
-        }
-    }
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -35,11 +28,17 @@ public class BeaconFinderAuto extends CameraProcessor {
         telemetry.addData("Status:", "Initializing");
         telemetry.update();
 
-        // Initiate camera
-        setCameraDownsampling(9);
-        startCamera();
+        // Calibrate gyro
+        robot.gyro.calibrate();
 
-        while(!gamepad1.a && (teamColor == "NONE")) {
+        while(robot.gyro.isCalibrating()) {
+            sleep(100);
+        }
+
+        telemetry.addData("Finished Initializing:", robot.gyro.getIntegratedZValue());
+        telemetry.update();
+
+        while(!gamepad1.a) {
             if(gamepad1.b) {
                 teamColor = "RED";
             } else if(gamepad1.x) {
@@ -51,85 +50,122 @@ public class BeaconFinderAuto extends CameraProcessor {
 
             idle();
         }
-
-        telemetry.addData("Status:", "Initialized (waiting for start)");
+        telemetry.addData("Status:", "Finished Color Selection. Final Color: " + teamColor);
         telemetry.update();
 
-        // Wait for the game to start (driver presses PLAY)
-        waitForStart();
+        Thread.sleep(2000);
+
+        while(!gamepad1.a)
+        {
+            if(gamepad1.b) {
+                delay = true;
+            } else if(gamepad1.x) {
+                delay = false;
+            }
+
+            telemetry.addData("Delay:", delay);
+            telemetry.update();
+
+            idle();
+        }
+        telemetry.addData("Final Delay Selection:", delay);
+        telemetry.update();
+
+        Thread.sleep(2000);
+
+        while(!gamepad1.a)
+        {
+            if(gamepad1.b) {
+                programSelection = 0; //0 is flat against the wall, near the ramp
+            } else if(gamepad1.x) {
+                programSelection = 1; //1 is at an angle on the left side, still pointed at the center goal
+            }
+
+            telemetry.addData("Selection:", programSelection);
+            telemetry.update();
+
+            idle();
+        }
+
+        telemetry.addData("Status:", "Initialized (waiting for start)");
+        telemetry.addData("Delay:", delay);
+        telemetry.addData("Team Color:", teamColor);
+        telemetry.update();
+
+        waitForStart(); // Wait for the game to start (driver presses PLAY)
 
         telemetry.addData("Status:", "Moving...");
         telemetry.update();
 
-        turnTester();
-
-        // Move off of the wall
-        /*moveStraight(13, 0.4);
-        Thread.sleep(1500); // Wait for robot to settle
-        shootShooter(1);
-        Thread.sleep(500); // Pause in-between shots
-        shootShooter(1);
-        moveStraight(7, 0.4);
-
-        // Now we move on to the beacons
-        if(teamColor == "RED") { //We are red
-            gyroTurn(45);
-            moveStraight(18, 0.4);
-            gyroTurn(90);
-            moveStraight(33, 0.4);
-            gyroTurn(180);
-        } else if(teamColor == "BLUE") { //We are blue
-            gyroTurn(-45);
-            moveStraight(18, 0.4);
-            gyroTurn(-90);
-            moveStraight(33, 0.4);
-            gyroTurn(0);
-        }*/
-
-        /* Move to and press the first beacon*/
-        /*if(teamColor == "RED") {
-            driveToLine(-0.1);
-        } else if(teamColor == "BLUE"){
-            driveToLine(0.1);
+        // Delay yes/no?
+        if(delay)
+        {
+            Thread.sleep(10000); //Wait for 10 seconds
         }
 
-        Thread.sleep(1000); // Wait for robot to settle
-        String beacon1 = getBeaconSide(5);
+        //Check which team we are on
+        if(teamColor.equals("BLUE")) //We're on blue team
+        {
+            if(programSelection == 0)
+            {
+                //Blue team, flat against the wall on the right side
 
-        if(beacon1 == "LEFT") {
-            pressLeftButton();
-        } else if(beacon1 == "RIGHT") {
-            pressRightButton();
-        }*/
-        /* End execution of first beacon navigation */
+                //Pull forward to shoot
+                moveStraight(18.5, 0.4);
+                //Wait a moment for the robot to stop
+                Thread.sleep(1000);
+                //Fire 2 shots
+                fireTwice();
+                //Pull forward to dislodge the ball
+                moveStraight(15, 1);
+                gyroTurnNew(-10);
+                moveStraight(10, 0.4);
+            }
+            else if (programSelection == 1)
+            {
+                //Blue team, angled on the left side
+                //Pull forward to shoot
+                moveStraight(38, 0.5);
+                //Wait a moment for the robot to stop
+                Thread.sleep(1000);
+                //Fire 2 shots
+                fireTwice();
+                //Pull forward a bit more to hit the ball
+                moveStraight(20, 1);
+            }
 
-        // Realign the robot in preparation for moving to the second beacon
-        /*if(teamColor == "RED") {
-            gyroTurn(180 - 2);
-        } else if(teamColor == "BLUE") {
-            gyroTurn(0 + 2);
-        }*/
-
-        /* Move to and press the second beacon*/
-        /*if(teamColor == "RED") {
-            moveStraight(40, -0.5); // Mind the gap between beacons
-            driveToLine(-0.1);
-        } else if(teamColor == "BLUE") {
-            moveStraight(40, 0.5); // Mind the gap between beacons
-            driveToLine(0.1);
         }
+        else //We're on red team
+        {
+            if(programSelection == 0)
+            {
+                //Red team, flat against the wall on the right side
 
-        Thread.sleep(1000);
-        String beacon2 = getBeaconSide(5);
+                //Pull forward to shoot
+                moveStraight(18.5, 0.4);
+                //Wait a moment for the robot to stop
+                Thread.sleep(1000);
+                //Fire 2 shots
+                fireTwice();
+                //Pull forward to dislodge the ball
+                moveStraight(15, 1);
+                gyroTurnNew(-10);
+                moveStraight(10, 0.4);
+            }
+            else if(programSelection == 1)
+            {
+                //Red team, angled on the left side
+                //Pull forward to shoot
+                moveStraight(38, 0.5);
+                //Wait a moment for the robot to stop
+                Thread.sleep(1000);
+                //Fire 2 shots
+                fireTwice();
+                //Pull forward a bit more to hit the ball
+                moveStraight(20, 1);
+            }
 
-        if(beacon2 == "LEFT") {
-            pressLeftButton();
-        } else if(beacon2 == "RIGHT") {
-            pressRightButton();
-        }*/
-        /* End execution of second beacon navigation */
-
-        // End routine
+        }
         telemetry.addData("Status:", "Shutting down...");
         telemetry.update();
 
@@ -186,19 +222,19 @@ public class BeaconFinderAuto extends CameraProcessor {
     }
 
     public void turnTester() throws InterruptedException {
-        gyroTurn(90);
+        gyroTurnNew(90);
         Thread.sleep(3000);
-        gyroTurn(45);
+        gyroTurnNew(45);
         Thread.sleep(3000);
-        gyroTurn(0);
+        gyroTurnNew(0);
         Thread.sleep(3000);
-        gyroTurn(-45);
+        gyroTurnNew(-45);
         Thread.sleep(3000);
-        gyroTurn(-90);
+        gyroTurnNew(-90);
         Thread.sleep(3000);
-        gyroTurn(-180);
+        gyroTurnNew(-180);
         Thread.sleep(3000);
-        gyroTurn(0);
+        gyroTurnNew(0);
     }
 
     public void gyroTurn(int target) throws InterruptedException {
@@ -217,7 +253,7 @@ public class BeaconFinderAuto extends CameraProcessor {
         int successfulLoops = 0;
 
         while(successfulLoops < 5000) {
-            heading = robot.getGyroYaw();
+            heading = robot.gyro.getIntegratedZValue();
             double error = (target - heading) / 360;
 
             integral = integral + error;
@@ -277,6 +313,53 @@ public class BeaconFinderAuto extends CameraProcessor {
             } else {
                 successfulLoops = 0;
             }
+
+            idle();
+        }
+
+        setDrivePower(0);
+    }
+
+    public void gyroTurnNew(int target) throws InterruptedException {
+        robot.l1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.r1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        idle();
+
+        target += 4; //The robot always stopped 4 degrees short, so this is a terrible terrible bandaid solution that we should not be using
+
+        double Kp = 0.8125; // 0.8125
+        double Ki = 0.004; // 0.006
+        double Kd = 0.5; // 0.5
+
+        double integral = 0;
+        double heading;
+        double error_prior = 0;
+
+        while(opModeIsActive()) {
+            heading = robot.gyro.getIntegratedZValue();
+
+            double error = (target - heading) / 360;
+            integral = integral + error;
+            double derivative = error - error_prior;
+
+            double output = 0.8 * Range.clip((Kp * error + Ki * integral + Kd * derivative), -1, 1);
+
+            robot.l1.setPower(-output);
+            robot.l2.setPower(-output);
+            robot.r1.setPower(output);
+            robot.r2.setPower(output);
+
+            if(Math.abs(target - heading) <= 1) {
+                break;
+            }
+
+            telemetry.addData("Power:", output);
+            telemetry.addData("Error:", error);
+            telemetry.addData("Kp Pwr:", Kp * error);
+            telemetry.addData("Ki Pwr:", Ki * integral);
+            telemetry.addData("Kd Pwr:", Kd * derivative);
+            telemetry.addData("Heading / Target:", heading + " / " + target);
+            telemetry.update();
 
             idle();
         }
@@ -392,5 +475,101 @@ public class BeaconFinderAuto extends CameraProcessor {
 
     public double getWallDistance() {
         return robot.range1.getDistance(DistanceUnit.CM);
+    }
+
+
+    public void determineProgram() throws InterruptedException
+    {
+
+        while(!gamepad1.a) {
+            if(gamepad1.b) {
+                teamColor = "RED";
+            } else if(gamepad1.x) {
+                teamColor = "BLUE";
+            }
+
+            telemetry.addData("Team Color:", teamColor);
+            telemetry.update();
+
+            idle();
+        }
+        telemetry.addData("Status:", "Finished Color Selection. Final Color: " + teamColor);
+        telemetry.update();
+
+        Thread.sleep(2000);
+
+        while(!gamepad1.a)
+        {
+            if(gamepad1.b) {
+                delay = true;
+            } else if(gamepad1.x) {
+                delay = false;
+            }
+
+            telemetry.addData("Delay:", delay);
+            telemetry.update();
+
+            idle();
+        }
+        telemetry.addData("Final Delay Selection:", delay);
+        telemetry.update();
+
+        Thread.sleep(2000);
+
+        while(!gamepad1.a)
+        {
+            if(gamepad1.b) {
+                programSelection = 0; //0 is flat against the wall, near the ramp
+            } else if(gamepad1.x) {
+                programSelection = 1; //1 is at an angle on the left side, still pointed at the center goal
+            }
+
+            telemetry.addData("Selection:", programSelection);
+            telemetry.update();
+
+            idle();
+        }
+
+        telemetry.addData("Status:", "Initialized (waiting for start)");
+        telemetry.addData("Delay:", delay);
+        telemetry.addData("Team Color:", teamColor);
+        telemetry.update();
+    }
+
+    public void dislodgeBall(String direction) throws InterruptedException
+    {
+        if(direction.equals("left"))
+        {
+            int headingStart = robot.gyro.getIntegratedZValue();
+            gyroTurnNew(headingStart - 90);
+            gyroTurnNew(headingStart + 90);
+        } else if(direction.equals("right"))
+        {
+            int headingStart = robot.gyro.getIntegratedZValue();
+            gyroTurnNew(headingStart + 90);
+            gyroTurnNew(headingStart - 90);
+        }
+    }
+
+    public void fireTwice() throws InterruptedException
+    {
+        robot.shooter1.setPower(1);
+        robot.shooter2.setPower(1);
+
+        Thread.sleep(750);
+
+        robot.shooter2.setPower(0);
+        robot.shooter1.setPower(0);
+
+        Thread.sleep(1000);
+
+        robot.shooter2.setPower(1);
+        robot.shooter1.setPower(1);
+
+        Thread.sleep(750);
+
+        robot.shooter2.setPower(0);
+        robot.shooter1.setPower(0);
+
     }
 }
