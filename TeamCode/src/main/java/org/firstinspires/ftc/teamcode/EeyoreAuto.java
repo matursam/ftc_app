@@ -20,13 +20,14 @@ public class EeyoreAuto extends CameraProcessor {
     boolean delay = false;
     int programSelection = 0;
 
-
     @Override
     public void runOpMode() throws InterruptedException {
         robot.init(hardwareMap);
 
         telemetry.addData("Status:", "Initializing");
         telemetry.update();
+
+        startCamera();
 
         // Calibrate gyro
         robot.gyro.calibrate();
@@ -50,46 +51,8 @@ public class EeyoreAuto extends CameraProcessor {
 
             idle();
         }
+
         telemetry.addData("Status:", "Finished Color Selection. Final Color: " + teamColor);
-        telemetry.update();
-
-        Thread.sleep(2000);
-
-        while(!gamepad1.a)
-        {
-            if(gamepad1.b) {
-                delay = true;
-            } else if(gamepad1.x) {
-                delay = false;
-            }
-
-            telemetry.addData("Delay:", delay);
-            telemetry.update();
-
-            idle();
-        }
-        telemetry.addData("Final Delay Selection:", delay);
-        telemetry.update();
-
-        Thread.sleep(2000);
-
-        while(!gamepad1.a)
-        {
-            if(gamepad1.b) {
-                programSelection = 0; //0 is flat against the wall, near the ramp
-            } else if(gamepad1.x) {
-                programSelection = 1; //1 is at an angle on the left side, still pointed at the center goal
-            }
-
-            telemetry.addData("Selection:", programSelection);
-            telemetry.update();
-
-            idle();
-        }
-
-        telemetry.addData("Status:", "Initialized (waiting for start)");
-        telemetry.addData("Delay:", delay);
-        telemetry.addData("Team Color:", teamColor);
         telemetry.update();
 
         waitForStart(); // Wait for the game to start (driver presses PLAY)
@@ -97,75 +60,8 @@ public class EeyoreAuto extends CameraProcessor {
         telemetry.addData("Status:", "Moving...");
         telemetry.update();
 
-        // Delay yes/no?
-        if(delay)
-        {
-            Thread.sleep(10000); //Wait for 10 seconds
-        }
+        turnTester();
 
-        //Check which team we are on
-        if(teamColor.equals("BLUE")) //We're on blue team
-        {
-            if(programSelection == 0)
-            {
-                //Blue team, flat against the wall on the right side
-
-                //Pull forward to shoot
-                moveStraight(18.5, 0.4);
-                //Wait a moment for the robot to stop
-                Thread.sleep(1000);
-                //Fire 2 shots
-                fireTwice();
-                //Pull forward to dislodge the ball
-                moveStraight(15, 1);
-                gyroTurnNew(-10);
-                moveStraight(10, 0.4);
-            }
-            else if (programSelection == 1)
-            {
-                //Blue team, angled on the left side
-                //Pull forward to shoot
-                moveStraight(38, 0.5);
-                //Wait a moment for the robot to stop
-                Thread.sleep(1000);
-                //Fire 2 shots
-                fireTwice();
-                //Pull forward a bit more to hit the ball
-                moveStraight(20, 1);
-            }
-
-        }
-        else //We're on red team
-        {
-            if(programSelection == 0)
-            {
-                //Red team, flat against the wall on the right side
-
-                //Pull forward to shoot
-                moveStraight(18.5, 0.4);
-                //Wait a moment for the robot to stop
-                Thread.sleep(1000);
-                //Fire 2 shots
-                fireTwice();
-                //Pull forward to dislodge the ball
-                moveStraight(15, 1);
-                gyroTurnNew(-10);
-                moveStraight(10, 0.4);
-            }
-            else if(programSelection == 1)
-            {
-                //Red team, angled on the left side
-                //Pull forward to shoot
-                moveStraight(38, 0.5);
-                //Wait a moment for the robot to stop
-                Thread.sleep(1000);
-                //Fire 2 shots
-                fireTwice();
-                //Pull forward a bit more to hit the ball
-                moveStraight(20, 1);
-            }
-
-        }
         telemetry.addData("Status:", "Shutting down...");
         telemetry.update();
 
@@ -222,19 +118,17 @@ public class EeyoreAuto extends CameraProcessor {
     }
 
     public void turnTester() throws InterruptedException {
-        gyroTurnNew(90);
+        gyroTurnSimple(90);
+        Thread.sleep(10000);
+        gyroTurnSimple(-90);
+        Thread.sleep(10000);
+        gyroTurnSimple(-180);
         Thread.sleep(3000);
-        gyroTurnNew(45);
+        gyroTurnSimple(180);
         Thread.sleep(3000);
-        gyroTurnNew(0);
+        gyroTurnSimple(-180);
         Thread.sleep(3000);
-        gyroTurnNew(-45);
-        Thread.sleep(3000);
-        gyroTurnNew(-90);
-        Thread.sleep(3000);
-        gyroTurnNew(-180);
-        Thread.sleep(3000);
-        gyroTurnNew(0);
+        gyroTurnSimple(360);
     }
 
     public void gyroTurn(int target) throws InterruptedException {
@@ -320,12 +214,26 @@ public class EeyoreAuto extends CameraProcessor {
         setDrivePower(0);
     }
 
+    public void turnRobot(int speed, int time)
+    {
+        long startTime = System.currentTimeMillis();
+        while(System.currentTimeMillis() - startTime < time)
+        {
+            robot.l1.setPower(speed);
+            robot.l2.setPower(speed);
+            robot.r1.setPower(-speed);
+            robot.r2.setPower(-speed);
+        }
+        robot.l1.setPower(0);
+        robot.l2.setPower(0);
+        robot.r1.setPower(0);
+        robot.r2.setPower(0);
+    }
+
     public void gyroTurnNew(int target) throws InterruptedException {
         robot.l1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         robot.r1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         idle();
-
-        target += 4; //The robot always stopped 4 degrees short, so this is a terrible terrible bandaid solution that we should not be using
 
         double Kp = 0.8125; // 0.8125
         double Ki = 0.004; // 0.006
@@ -334,6 +242,8 @@ public class EeyoreAuto extends CameraProcessor {
         double integral = 0;
         double heading;
         double error_prior = 0;
+
+        robot.gyro.resetZAxisIntegrator();
 
         while(opModeIsActive()) {
             heading = robot.gyro.getIntegratedZValue();
@@ -365,6 +275,49 @@ public class EeyoreAuto extends CameraProcessor {
         }
 
         setDrivePower(0);
+    }
+
+    public void gyroTurnSimple(int target) throws InterruptedException {
+        robot.l1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.r1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        idle();
+
+        int heading = 0;
+        int error = 0;
+        double output = 0;
+
+        robot.gyro.resetZAxisIntegrator();
+
+        while(opModeIsActive()) {
+            heading = robot.gyro.getIntegratedZValue();
+            error = target - heading;
+            output = 0.3;
+
+            if(Math.abs(error) < 10) {
+                output = 0.2;
+            }
+
+            if(target < 0) {
+                output *= -1;
+            }
+
+            robot.l1.setPower(-output);
+            robot.l2.setPower(-output);
+            robot.r1.setPower(output);
+            robot.r2.setPower(output);
+
+            if(Math.abs(error) <= 1) {
+                break;
+            }
+
+            idle();
+        }
+
+        setDrivePower(0);
+        telemetry.addData("Power:", output);
+        telemetry.addData("Error:", error);
+        telemetry.addData("Heading / Target:", heading + " / " + target);
+        telemetry.update();
     }
 
     public void moveStraight(double inches, double power) throws InterruptedException {

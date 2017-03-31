@@ -21,9 +21,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.Quaternion;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@TeleOp(name="Gyro Test", group="Linear Opmode")  // @Autonomous(...) is the other common choice
+@TeleOp(name="Gyro Test (Adafruit)", group="Linear Opmode")  // @Autonomous(...) is the other common choice
 //@Disabled
-public class GyroTest extends LinearOpMode {
+public class GyroTestAdafruit extends LinearOpMode {
     public BNO055IMU gyro = null;
 
     @Override
