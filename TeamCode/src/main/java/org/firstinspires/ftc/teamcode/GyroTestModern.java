@@ -32,8 +32,6 @@ public class GyroTestModern extends LinearOpMode {
         gyro = hardwareMap.get(ModernRoboticsI2cGyro.class, "gyro");
         gyro.calibrate();
 
-        gyro.resetZAxisIntegrator();
-
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
