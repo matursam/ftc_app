@@ -64,31 +64,45 @@ public class EeyoreAuto extends CameraProcessor {
         telemetry.update();
 
         // Move off of the wall to within range of the center goal
-        moveStraight(16, 0.25);
+        moveStraight(14, 0.3);
 
         // Wait for the robot to settle/stop moving before shooting
-        Thread.sleep(1000);
+        Thread.sleep(200);
 
         // Score the pre-loaded ball(s)
-        shootShooter(1);
+        /*shootShooter(1);
         Thread.sleep(800);
         shootShooter(0);
         Thread.sleep(1000);
         shootShooter(1);
         Thread.sleep(1000);
-        shootShooter(0);
+        shootShooter(0);*/
 
         // Turn half-way toward the beacon-wall, parallel to the corner-goal
         gyroTurn(-45);
 
         // Move straight, parallel to the corner-goal
-        moveStraight(55, 0.25);
+        moveStraight(58, 0.5);
+
+        Thread.sleep(100);
 
         // Turn perpendicular to the beacon-wall
         gyroTurn(-90);
 
-        // Move closer to the beacon
-        moveStraight(4, 0.25);
+        // Move closer to and press the first beacon
+        pressBeaconButton();
+
+        // Turn parallel to the beacon-wall (with adjustment)
+        gyroTurn(-12);
+
+        // Move straight, parallel to the beacon-wall toward the second beacon
+        moveStraight(42, 0.4);
+
+        // Turn perpendicular to the beacon-wall
+        gyroTurn(-90);
+
+        // Move closer to and press the second beacon
+        pressBeaconButton();
 
         telemetry.addData("Status:", "Shutting down...");
         telemetry.update();
@@ -120,16 +134,24 @@ public class EeyoreAuto extends CameraProcessor {
 
     public void pressBeaconButton() throws InterruptedException {
         String currentBeaconColor = "NULL";
-        do {
-            moveStraight(15, 0.3);
-            Thread.sleep(100);
-            moveStraightSimple(-0.3, 600);
-            Thread.sleep(100);
-            currentBeaconColor = getBeaconColor();
-            telemetry.addData("Beacon Color: ", currentBeaconColor);
-            telemetry.update();
 
-        } while(!teamColor.equals(currentBeaconColor));
+        // Get the beacon to be set to a color
+        moveStraightSimple(0.2, 1000);
+        Thread.sleep(200);
+        moveStraightSimple(-0.2, 600);
+
+        currentBeaconColor = getBeaconColor();
+
+        // Keep pushing until the beacon color is the selected color
+        while(!teamColor.equals(currentBeaconColor)) {
+            Thread.sleep(3000);
+
+            moveStraightSimple(0.2, 1000);
+            Thread.sleep(200);
+            moveStraightSimple(-0.2, 600);
+
+            currentBeaconColor = getBeaconColor();
+        }
     }
 
     public void turn(int speed, int time) {
@@ -216,13 +238,13 @@ public class EeyoreAuto extends CameraProcessor {
         setDrivePower(power);
 
         while((robot.l1.getCurrentPosition() < targetLeft) && (robot.r1.getCurrentPosition() < targetRight)) {
-            telemetry.addData("Target", "left=" + targetLeft + " " + "right=" + targetRight);
-            telemetry.addData("Position", "left=" + robot.l1.getCurrentPosition() + " " + "right=" + robot.r1.getCurrentPosition());
-            telemetry.addData("Power", "left=" + robot.l1.getPower() + " " + "right=" + robot.r1.getPower());
-            telemetry.update();
-
             idle();
         }
+
+        telemetry.addData("Target", "left=" + targetLeft + " " + "right=" + targetRight);
+        telemetry.addData("Position", "left=" + robot.l1.getCurrentPosition() + " " + "right=" + robot.r1.getCurrentPosition());
+        telemetry.addData("Power", "left=" + robot.l1.getPower() + " " + "right=" + robot.r1.getPower());
+        telemetry.update();
 
         setDrivePower(0);
     }
@@ -300,8 +322,6 @@ public class EeyoreAuto extends CameraProcessor {
 
         telemetry.addData("Camera Time:", endTime - startTime);
         telemetry.update();
-
-        Thread.sleep(4000);
 
         return beaconColor;
     }
